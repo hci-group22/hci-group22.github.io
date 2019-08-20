@@ -1,0 +1,11 @@
+State,early,mid,end,final,position
+AT,3,4,3,2,3
+CT,1,2,2,,6
+CP,,,1,,10
+MV,5,3,4,2,1
+NSWS,2,,,,9
+NM,2,1,,,8
+QF,2,3,3,,5
+SS,2,3,3,,4
+WBPM,4,4,3,,2
+WCF,3,1,1,,7

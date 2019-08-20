@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <style>
+
+        body{
+            width:1060px;
+            margin:50px auto;
+            font: 10px sans-serif;
+        }
+
+        text {
+            font: 25px sans-serif;
+        }
+
+        p {
+            font-family:Arial;
+            font-size:15px;
+            padding:9px 23px;
+            text-decoration:none;
+            text-shadow:0px 1px 0px #263666;
+        }
+
+        svg {
+            overflow: visible;
+        }
+
+        button {
+            background-color: black; /* Green */
+            border: none;
+            color: white;
+            padding: 12px 28px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            -webkit-transition-duration: 0.4s; /* Safari */
+            transition-duration: 0.4s;
+            cursor: pointer;
+
+        }
+
+        Button:hover {
+            background-color: white;
+            color: black;
+        }
+        Button:active {
+            position:relative;
+            top:1px;
+            background-color: white;
+            color: black;
+        }
+
+
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #000;
+            stroke-width:1;
+            shape-rendering: crispEdges;
+        }
+
+        .bar {
+            fill: #2C7D48;
+        }
+
+        .bar:hover {
+            fill: orangered ;
+        }
+
+        /*.x.axis path {
+          display: none;
+        }*/
+
+        .d3-tip {
+            line-height: 1;
+            font-weight: bold;
+            padding: 12px;
+            padding-right: 50px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 2px;
+        }
+        .d3-tip img {
+            width: 40px; height: 40px;
+        }
+
+        /* Creates a small triangle extender for the tooltip */
+        .d3-tip:after {
+            box-sizing: border-box;
+            display: inline;
+            font-size: 8px;
+            width: 100%;
+            line-height: 1;
+            color: rgba(0, 0, 0, 0.8);
+            content: "\25BC";
+            position: absolute;
+            text-align: center;
+        }
+
+        /* Style northward tooltips differently */
+        .d3-tip.n:after {
+            margin: -1px 0 0 0;
+            top: 100%;
+            left: 0;
+        }
+        .legend {
+            fill: black;
+            font: 14px sans-serif;
+            text-anchor: start;
+            font-size: 12px;
+        }
+
+        select {
+            background-color: white;
+            -moz-border-radius: 3px;
+            -webkit-border-radius: 3px;
+            border-radius: 3px;
+            border: 1px solid #0b0e07;
+            display: inline-block;
+            cursor: pointer;
+            color: #0b0e07;
+            font-family: Arial;
+            font-size: 15px;
+            padding: 4px 5px;
+            text-decoration: none;
+            text-shadow: 0px 1px 0px #263666;
+        }
+
+
+    </style>
+    <title>ANZ Championship</title>
+    <script type="text/javascript" src="js/d3.js"></script>
+    <script type="text/javascript" src="js/index.js"></script>
+
+
+</head>
+<body>
+
+<h1 align="center"><b>ANZ Championship - Team Home Venue Performance Analysis</b></h1>
+
+<p id="menu" align="center">Choose Between Team and Country
+        <select class="selected" id="selected">
+        <option value="TeamData">Team Data</option>
+        <option value="CountryData">Country Data</option>
+
+    </select>
+</p>
+<div id="myDIV" align="middle">
+
+    <button class="a" style="margin-left: 10px">Year 2008</button>
+    <button class="b">Year 2009</button>
+    <button class="c">Year 2010</button>
+    <button class="d">Year 2011</button>
+    <button class="e">Year 2012</button>
+    <button class="f">Year 2013</button>
+
+</div>
+</br>
+
+
+<script>
+    // Add active class to the current button (highlight it)
+    var header = document.getElementById("myDIV");
+    var btns = header.getElementsByClassName("a");
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].addEventListener("click", function() {
+            var current = document.getElementsByClassName("active");
+            if (current.length > 0) {
+                current[0].className = current[0].className.replace(" active", "");
+            }
+            this.className += " active";
+        });
+    }
+</script>
+
+<script type="text/javascript">
+    var margin = {top: 0, right: 300, bottom: 10, left: 100},
+        width = 2500 - margin.left - margin.right,
+        height = 700 - margin.top - margin.bottom;
+
+    var formatPercent = d3.format(".0%");
+    var sortOrder=false;
+    var x = d3.scale.ordinal()
+        .rangeRoundBands([0, width/1.1], .1);
+
+    var y = d3.scale.linear()
+        .domain([0,150])
+        .range([height, 0]);
+
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left");
+
+
+    var tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset([80,0])
+        .html(function(d) {
+            return "<img style='position: absolute; top: 6px; right:6px;' src="+ d.Logo +"><br><strong>Team:</strong> <span style='color:red'>" + d.Name +
+                "</span><br><strong>Country:</strong> <span style='color:red'>" + d.Country +
+                "</span><br><strong>2008:</strong> <span style='color:red'>" + d.a +
+                "</span><br><strong>2009:</strong> <span style='color:red'>" + d.b +
+                "</span><br><strong>2010:</strong> <span style='color:red'>" + d.c +
+                "</span><br><strong>2011:</strong> <span style='color:red'>" + d.d +
+                "</span><br><strong>2012:</strong> <span style='color:red'>" + d.e +
+                "</span><br><strong>2013:</strong> <span style='color:red'>" + d.f +
+                "</span>";
+        });
+
+    var svg = d3.select("body").append("svg")
+        .attr("viewBox", "0 0 " + width + " " + height)
+        //    .attr("width", width + margin.left + margin.right)
+        //  .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+
+    d3.csv("TeamData.csv", type, function(error, data) {
+        x.domain(data.map(function(d) { return d.Name; }));
+        y.domain([0,100]);
+        //y.domain([d3.extent(data, function(d) { return d.2012; })]);
+
+        var legendRectSize = 18,
+            legendSpacing  = 4,
+            gapBetweenGroups = 10
+        spaceForLabels   = 1000,
+            spaceForLegend   = 1000,
+            chartWidth       = 600;
+
+        var color = d3.scale.category20();
+        var legenddata = ["aaa","bbb","ccc"]
+        var legend = svg.selectAll('.legend')
+            .data(legenddata)
+            .enter()
+            .append('g')
+            .attr('transform', function (d, i) {
+                var height = legendRectSize + legendSpacing;
+                var offset = -gapBetweenGroups/2;
+                var horz = spaceForLabels + chartWidth + 40 - legendRectSize;
+                var vert = i * height - offset;
+                return 'translate(' + horz + ',' + vert + ')';
+            });
+
+        svg.append("g")
+            .attr("class","x axis")
+            .attr("transform","translate(0,"+ height +")")
+            .call(xAxis)
+            .selectAll(".tick text")
+            .call(wrap, x.rangeBand());
+
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis)
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+       
+
+        svg.call(tip);
+
+        svg.selectAll(".bar")
+            .data(data)
+            .enter().append("rect")
+            .attr("class", "bar")
+            .on('mouseover', tip.show)
+            .on('mouseout', tip.hide)
+            .attr("x", function(d) { return x(d.Name); })
+            .attr("width", x.rangeBand())
+            .attr("y", function(d) { return y(d.a); })
+            .attr("height", function(d) { return height - y(d.a); })
+            .style("fill",function(d){
+                if(d.Position==1){
+                    return "#5588BB";
+                }else if(d.Position==2){
+                    return "#66bbbb";
+                }else if(d.Position==3){
+                    return "#ffa31a";
+                }else if(d.Position==4){
+                    return "#99bb55";
+                }else if(d.Position==5){
+                    return "#ee9944";
+                }else if(d.Position==6){
+                    return "#444466";
+                }else if(d.Position==7){
+                    return "#bb5555";
+                }else if(d.Position==8){
+                    return "#ffff4d";
+                }else if(d.Position==9){
+                    return "#ff1a1a";
+                }else if(d.Position==   10){
+                    return "#4d79ff";
+                }
+            })
+
+
+        d3.select(".a")
+            .on('click', function() {
+
+                svg.append("g")
+                    .attr("class", "y axis")
+                    //.call(yAxis)
+                    .append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 6)
+                    .attr("dy", ".71em")
+
+                    .style("text-anchor", "end")
+
+                //.text("2009");
+
+                svg.call(tip);
+
+                svg.selectAll(".bar")
+                    .data(data)
+                    .on('mouseover', tip.show)
+                    .on('mouseout', tip.hide)
+                    .transition().duration(2000)
+                    .attr("y", function(d) { return y(d.a); })
+                    .attr("height", function(d) { return height - y(d.a); })
+
+                });
+
+        d3.select(".b")
+            .on('click', function() {
+
+                svg.append("g")
+                    .attr("class", "y axis")
+                    .call(yAxis)
+                    .append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 6)
+                    .attr("dy", ".71em")
+                    .style("text-anchor", "end")
+                // .text("2009");
+
+                svg.call(tip);
+
+                svg.selectAll(".bar")
+                    .data(data).on('mouseover', tip.show)
+                    .on('mouseout', tip.hide).transition().duration(2000)
+                    .attr("y", function(d) { return y(d.b); })
+                    .attr("height", function(d) { return height - y(d.b); })
+
+
+
+            });
+
+        d3.select(".c")
+            .on('click', function() {
+
+                svg.append("g")
+                    .attr("class", "y axis")
+                    .call(yAxis)
+                    .append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 6)
+                    .attr("dy", ".71em")
+                    .style("text-anchor", "end")
+                //.text("2010");
+
+                svg.call(tip);
+
+                svg.selectAll(".bar")
+                    .data(data).on('mouseover', tip.show)
+                    .on('mouseout', tip.hide)
+                    .transition().duration(2000)
+                    .attr("y", function(d) { return y(d.c); })
+                    .attr("height", function(d) { return height - y(d.c); })
+
+
+            });
+
+        d3.select(".d")
+            .on('click', function() {
+
+                svg.append("g")
+                    .attr("class", "y axis")
+                    //.call(yAxis)
+                    .append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 6)
+                    .attr("dy", ".71em")
+                    .style("text-anchor", "end")
+                //.text("2011");
+
+                svg.call(tip);
+
+                svg.selectAll(".bar")
+                    .data(data).on('mouseover', tip.show)
+                    .on('mouseout', tip.hide)
+                    .transition().duration(2000)
+                    .attr("y", function(d) { return y(d.d); })
+                    .attr("height", function(d) { return height - y(d.d); })
+
+
+            });
+
+        d3.select(".e")
+            .on('click', function() {
+
+                svg.append("g")
+                    .attr("class", "y axis")
+                    //.call(yAxis)
+                    .append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 6)
+                    .attr("dy", ".71em")
+                    .style("text-anchor", "end")
+                //.text("2012");
+
+                svg.call(tip);
+
+                svg.selectAll(".bar")
+                    .data(data).on('mouseover', tip.show)
+                    .on('mouseout', tip.hide)
+                    .transition().duration(2000)
+                    .attr("y", function(d) { return y(d.e); })
+                    .attr("height", function(d) { return height - y(d.e); })
+
+
+            });
+
+        d3.select(".f")
+            .on('click', function() {
+
+                svg.append("g")
+                    .attr("class", "y axis")
+                    //.call(yAxis)
+                    .append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 6)
+                    .attr("dy", ".71em")
+                    .style("text-anchor", "end")
+                // .text("2013");
+
+                svg.call(tip);
+
+                svg.selectAll(".bar")
+                    .data(data).on('mouseover', tip.show)
+                    .on('mouseout', tip.hide)
+                    .transition().duration(2000)
+                    .attr("y", function(d) { return y(d.f); })
+                    .attr("height", function(d) { return height - y(d.f); })
+
+
+            });
+
+
+
+
+    });
+
+    d3.select(".selected")
+        .on('change', function() {
+            selectedVal=this.value;
+
+            if(selectedVal=="CountryData"){
+                dataset = "CountryData.csv";
+                updateData2(dataset);
+            }
+
+            else if(selectedVal=="TeamData"){
+                dataset = "TeamData.csv"
+                updateData(dataset);
+            }
+
+
+        });
+
+
+    function wrap(text, width) {
+        text.each(function() {
+            var text = d3.select(this),
+                words = text.text().split(/\s+/).reverse(),
+                word,
+                line = [],
+                lineNumber = 0,
+                lineHeight = 1.1, // ems
+                y = text.attr("y"),
+                dy = parseFloat(text.attr("dy")),
+                tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+            while (word = words.pop()) {
+                line.push(word);
+                tspan.text(line.join(" "));
+                if (tspan.node().getComputedTextLength() > width) {
+                    line.pop();
+                    tspan.text(line.join(" "));
+                    line = [word];
+                    tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+                }
+            }
+        });
+    }
+
+    function updateData(dataset) {
+
+        d3.select("svg")
+            .remove();
+
+        var margin = {top: 0, right: 300, bottom: 10, left: 100},
+            width = 2500 - margin.left - margin.right,
+            height = 700 - margin.top - margin.bottom;
+
+        var formatPercent = d3.format(".0%");
+        var sortOrder=false;
+        var x = d3.scale.ordinal()
+            .rangeRoundBands([0, width/1.1], .1);
+
+        var y = d3.scale.linear()
+            .domain([0,150])
+            .range([height, 0]);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom");
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left");
+
+        var tip = d3.tip()
+            .attr('class', 'd3-tip')
+            .offset([80, 0])
+            .html(function(d) {
+                return "<img style='position: absolute; top: 6px; right:6px;' src="+ d.Logo +"><br><strong>Team:</strong> <span style='color:red'>" + d.Name +
+                    "</span><br><strong>Country:</strong> <span style='color:red'>" + d.Country +
+                    "</span><br><strong>2008:</strong> <span style='color:red'>" + d.a +
+                    "</span><br><strong>2009:</strong> <span style='color:red'>" + d.b +
+                    "</span><br><strong>2010:</strong> <span style='color:red'>" + d.c +
+                    "</span><br><strong>2011:</strong> <span style='color:red'>" + d.d +
+                    "</span><br><strong>2012:</strong> <span style='color:red'>" + d.e +
+                    "</span><br><strong>2013:</strong> <span style='color:red'>" + d.f +
+                    "</span>";
+            })
+
+        var svg = d3.select("body").append("svg")
+            .attr("viewBox", "0 0 " + width + " " + height)
+            //    .attr("width", width + margin.left + margin.right)
+            //  .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        ;
+
+
+
+        d3.csv(dataset, type, function(error, data) {
+            x.domain(data.map(function(d) { return d.Name; }));
+            //y.domain([0,d3.max(data, function(d) { return d.2012; })]);
+            y.domain([0,100]);
+
+
+            var legendRectSize = 18,
+                legendSpacing  = 4,
+                gapBetweenGroups = 10
+            spaceForLabels   = 1000,
+                spaceForLegend   = 1000,
+                chartWidth       = 600;
+
+            var color = d3.scale.category20();
+            var legenddata = ["aaa","bbb","ccc"]
+            var legend = svg.selectAll('.legend')
+                .data(legenddata)
+                .enter()
+                .append('g')
+                .attr('transform', function (d, i) {
+                    var height = legendRectSize + legendSpacing;
+                    var offset = -gapBetweenGroups/2;
+                    var horz = spaceForLabels + chartWidth + 40 - legendRectSize;
+                    var vert = i * height - offset;
+                    return 'translate(' + horz + ',' + vert + ')';
+                });
+
+            svg.append("g")
+                .attr("class","x axis")
+                .attr("transform","translate(0,"+ height +")")
+                .call(xAxis)
+                .selectAll(".tick text")
+                .call(wrap, x.rangeBand());
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("transform", "rotate      (-90)")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+            //.text("MatchesPlayed");
+
+
+            svg.call(tip);
+
+            svg.selectAll(".bar")
+                .data(data)
+                .enter().append("rect")
+                .on('mouseover', tip.show)
+                .on('mouseout', tip.hide)
+                .attr("class", "bar")
+                .attr("x", function(d) { return x(d.Name); })
+                .attr("width", x.rangeBand())
+                .attr("y", function(d) { return y(d.a); })
+                .attr("height", function(d) { return height - y(d.a); })
+                .style("fill",function(d){
+                    if(d.Position==1){
+                        return "#5588BB";
+                    }else if(d.Position==2){
+                        return "#66bbbb";
+                    }else if(d.Position==3){
+                        return "#ffa31a";
+                    }else if(d.Position==4){
+                        return "#99bb55";
+                    }else if(d.Position==5){
+                        return "#ee9944";
+                    }else if(d.Position==6){
+                        return "#444466";
+                    }else if(d.Position==7){
+                        return "#bb5555";
+                    }else if(d.Position==8){
+                        return "#ffff4d";
+                    }else if(d.Position==9){
+                        return "#ff1a1a";
+                    }else if(d.Position==   10){
+                        return "#4d79ff";
+                    }
+                })
+
+
+            d3.select(".a")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        //.call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    //.text("2009");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide)
+                        .transition().duration(2000)
+                        .attr("y", function(d) { return y(d.a); })
+                        .attr("height", function(d) { return height - y(d.a); })
+
+                });
+
+            d3.select(".b")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        .call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    // .text("2009");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide).transition().duration(2000)
+                        .attr("y", function(d) { return y(d.b); })
+                        .attr("height", function(d) { return height - y(d.b); })
+
+
+                });
+
+            d3.select(".c")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        .call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    //.text("2010");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide)
+                        .transition().duration(2000)
+                        .attr("y", function(d) { return y(d.c); })
+                        .attr("height", function(d) { return height - y(d.c); })
+
+
+                });
+
+            d3.select(".d")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        //.call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    //.text("2011");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide)
+                        .transition().duration(2000)
+                        .attr("y", function(d) { return y(d.d); })
+                        .attr("height", function(d) { return height - y(d.d); })
+
+
+                });
+
+            d3.select(".e")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        //.call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    //.text("2012");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide)
+                        .transition().duration(2000)
+                        .attr("y", function(d) { return y(d.e); })
+                        .attr("height", function(d) { return height - y(d.e); })
+
+
+                });
+
+            d3.select(".f")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        //.call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    // .text("2013");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide)
+                        .transition().duration(2000)
+                        .attr("y", function(d) { return y(d.f); })
+                        .attr("height", function(d) { return height - y(d.f); })
+
+
+                });
+
+            function wrap(text, width) {
+                text.each(function() {
+                    var text = d3.select(this),
+                        words = text.text().split(/\s+/).reverse(),
+                        word,
+                        line = [],
+                        lineNumber = 0,
+                        lineHeight = 1.1, // ems
+                        y = text.attr("y"),
+                        dy = parseFloat(text.attr("dy")),
+                        tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+                    while (word = words.pop()) {
+                        line.push(word);
+                        tspan.text(line.join(" "));
+                        if (tspan.node().getComputedTextLength() > width) {
+                            line.pop();
+                            tspan.text(line.join(" "));
+                            line = [word];
+                            tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+                        }
+                    }
+                });
+            }
+
+        });
+
+    }
+
+    function updateData2(dataset) {
+
+        d3.select("svg")
+            .remove();
+
+        var margin = {top: 0, right: 300, bottom: 10, left: 100},
+            width = 2500 - margin.left - margin.right,
+            height = 700 - margin.top - margin.bottom;
+
+        var formatPercent = d3.format(".0%");
+        var sortOrder=false;
+        var x = d3.scale.ordinal()
+            .rangeRoundBands([0, width/1.1], .1);
+
+        var y = d3.scale.linear()
+            .domain([0,150])
+            .range([height, 0]);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom");
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left");
+
+        var tip = d3.tip()
+            .attr('class', 'd3-tip')
+            .offset([80, 0])
+            .html(function(d) {
+                return "<img style='position: absolute; top: 6px; right:6px;' src="+ d.Logo +"><br><strong>Team:</strong> <span style='color:red'>" + d.Name +
+                    "</span><br><strong>2008:</strong> <span style='color:red'>" + d.a +
+                    "</span><br><strong>2009:</strong> <span style='color:red'>" + d.b +
+                    "</span><br><strong>2010:</strong> <span style='color:red'>" + d.c +
+                    "</span><br><strong>2011:</strong> <span style='color:red'>" + d.d +
+                    "</span><br><strong>2012:</strong> <span style='color:red'>" + d.e +
+                    "</span><br><strong>2013:</strong> <span style='color:red'>" + d.f +
+                    "</span>";
+            })
+
+        var svg = d3.select("body").append("svg")
+            .attr("viewBox", "0 0 " + width + " " + height)
+            //    .attr("width", width + margin.left + margin.right)
+            //  .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        ;
+
+
+
+        d3.csv(dataset, type, function(error, data) {
+            x.domain(data.map(function(d) { return d.Name; }));
+            //y.domain([0,d3.max(data, function(d) { return d.2012; })]);
+            y.domain([0,100]);
+
+
+            var legendRectSize = 18,
+                legendSpacing  = 4,
+                gapBetweenGroups = 10
+            spaceForLabels   = 1000,
+                spaceForLegend   = 1000,
+                chartWidth       = 600;
+
+            var color = d3.scale.category20();
+            var legenddata = ["aaa","bbb","ccc"]
+            var legend = svg.selectAll('.legend')
+                .data(legenddata)
+                .enter()
+                .append('g')
+                .attr('transform', function (d, i) {
+                    var height = legendRectSize + legendSpacing;
+                    var offset = -gapBetweenGroups/2;
+                    var horz = spaceForLabels + chartWidth + 40 - legendRectSize;
+                    var vert = i * height - offset;
+                    return 'translate(' + horz + ',' + vert + ')';
+                });
+
+            svg.append("g")
+                .attr("class","x axis")
+                .attr("transform","translate(0,"+ height +")")
+                .call(xAxis)
+                .selectAll(".tick text")
+                .call(wrap, x.rangeBand());
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+            //.text("MatchesPlayed");
+
+
+            svg.call(tip);
+
+            svg.selectAll(".bar")
+                .data(data)
+                .enter().append("rect")
+                .on('mouseover', tip.show)
+                .on('mouseout', tip.hide)
+                .attr("class", "bar")
+                .attr("x", function(d) { return x(d.Name); })
+                .attr("width", x.rangeBand()-10)
+                .attr("y", function(d) { return y(d.a); })
+                .attr("height", function(d) { return height - y(d.a); })
+                .style("fill",function(d){
+                    if(d.Position==1){
+                        return "#5588BB";
+                    }else if(d.Position==2){
+                        return "#66bbbb";
+                    }else if(d.Position==3){
+                        return "#ffa31a";
+                    }else if(d.Position==4){
+                        return "#99bb55";
+                    }else if(d.Position==5){
+                        return "#ee9944";
+                    }else if(d.Position==6){
+                        return "#444466";
+                    }else if(d.Position==7){
+                        return "#bb5555";
+                    }else if(d.Position==8){
+                        return "#ffff4d";
+                    }else if(d.Position==9){
+                        return "#ff1a1a";
+                    }else if(d.Position==   10){
+                        return "#4d79ff";
+                    }
+                })
+
+
+            d3.select(".a")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        //.call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    //.text("2009");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide)
+                        .transition().duration(2000)
+                        .attr("y", function(d) { return y(d.a); })
+                        .attr("height", function(d) { return height - y(d.a); })
+
+                });
+
+            d3.select(".b")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        .call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    // .text("2009");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide).transition().duration(2000)
+                        .attr("y", function(d) { return y(d.b); })
+                        .attr("height", function(d) { return height - y(d.b); })
+
+
+                });
+
+            d3.select(".c")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        .call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    //.text("2010");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide)
+                        .transition().duration(2000)
+                        .attr("y", function(d) { return y(d.c); })
+                        .attr("height", function(d) { return height - y(d.c); })
+
+
+                });
+
+            d3.select(".d")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        //.call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    //.text("2011");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide)
+                        .transition().duration(2000)
+                        .attr("y", function(d) { return y(d.d); })
+                        .attr("height", function(d) { return height - y(d.d); })
+
+
+                });
+
+            d3.select(".e")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        //.call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    //.text("2012");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide)
+                        .transition().duration(2000)
+                        .attr("y", function(d) { return y(d.e); })
+                        .attr("height", function(d) { return height - y(d.e); })
+
+
+                });
+
+            d3.select(".f")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        //.call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    // .text("2013");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide)
+                        .transition().duration(2000)
+                        .attr("y", function(d) { return y(d.f); })
+                        .attr("height", function(d) { return height - y(d.f); })
+
+
+                });
+
+            d3.select(".CleanSheets")
+                .on('click', function() {
+
+                    svg.append("g")
+                        .attr("class", "y axis")
+                        //.call(yAxis)
+                        .append("text")
+                        .attr("transform", "rotate(-90)")
+                        .attr("y", 6)
+                        .attr("dy", ".71em")
+                        .style("text-anchor", "end")
+                    // .text("CleanSheets");
+
+                    svg.call(tip);
+
+                    svg.selectAll(".bar")
+                        .data(data).on('mouseover', tip.show)
+                        .on('mouseout', tip.hide)
+                        .transition().duration(2000)
+                        .attr("y", function(d) { return y(d.CleanSheets); })
+                        .attr("height", function(d) { return height - y(d.CleanSheets); })
+
+
+                });
+
+            function wrap(text, width) {
+                text.each(function() {
+                    var text = d3.select(this),
+                        words = text.text().split(/\s+/).reverse(),
+                        word,
+                        line = [],
+                        lineNumber = 0,
+                        lineHeight = 1.1, // ems
+                        y = text.attr("y"),
+                        dy = parseFloat(text.attr("dy")),
+                        tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+                    while (word = words.pop()) {
+                        line.push(word);
+                        tspan.text(line.join(" "));
+                        if (tspan.node().getComputedTextLength() > width) {
+                            line.pop();
+                            tspan.text(line.join(" "));
+                            line = [word];
+                            tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+                        }
+                    }
+                });
+            }
+
+        });
+
+    }
+
+    function type(d) {
+        d.Name=d.Name;
+        return d;
+    }
+
+
+</script><br>
+
+</br>
+    <P align="middle">Data is represented in percentage.</P>
+</br>
+</body>
+</html>
